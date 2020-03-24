@@ -19,22 +19,26 @@ io.on('connection', (client) => {
     client.join(data.room)
     users.addPeople(client.id, data.name, data.room);
 
-    client.broadcast.to(data.room).emit('peopleList', users.getPeoplePerRoom(data.sala));
+    client.broadcast.to(data.room).emit('peopleList', users.getPeoplePerRoom(data.room));
+    client.broadcast.to(data.room).emit('createMessage', createMessage('Admin', `${ data.name } has joined`));
 
     callback(users.getPeoplePerRoom(data.room));
    });
 
-   client.on('createMessage', (data) => {
-       let person = users.getPerson(client.id);
+   client.on('createMessage', (data, callback) => {
+        let person = users.getPerson(client.id);
         let message = createMessage(person.name, data.message);
-        client.broadcast.to(person.room).emit('createMessage', message);
+        client.broadcast.to(person.room).emit('createMessage', message);   
+
+        callback(message)
    });
 
    client.on('disconnect', () => {
        let deletePerson = users.deletePerson(client.id);
+       console.log(users)
 
-       client.broadcast.to(deletePerson).emit('createMessage', createMessage('Admin', `${ deletePerson } has left the chat`))
-       client.broadcast.to(deletePerson).emit('peopleList', users.getPeoplePerRoom(deletePerson.room));
+       client.broadcast.to(deletePerson.room).emit('createMessage', createMessage('Admin', `${ deletePerson.name } has left the chat`));
+       client.broadcast.to(deletePerson.room).emit('peopleList', users.getPeoplePerRoom(deletePerson.room));
     });
 
     client.on('privateMessage', data => {
